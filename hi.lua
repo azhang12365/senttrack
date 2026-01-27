@@ -205,11 +205,7 @@ local function Main()
             end
 
             for Index, BossName in pairs(RareBosses) do
-                local isFound = HaveRareBoss(BossName)
-                local alreadySentIndex = table.find(FoundRareBosses, BossName)
-
-                -- Nếu boss đang có mặt nhưng chưa gửi lần nào trong lần spawn này -> gửi 1 lần
-                if isFound and not alreadySentIndex then
+                if HaveRareBoss(BossName) then
                     print('SENT BOSS', BossName)
                     local Payload = {
                         ["JobId"] = tostring(game.JobId),
@@ -225,13 +221,10 @@ local function Main()
                     anat("Boss", BossName, game.JobId) 
 
                     request({Url = "https://zangroblox.com/rare_boss.php", Method = "POST", Headers = {["Content-Type"] = 'application/json'}, Body = game:GetService("HttpService"):JSONEncode(Payload)})
-
-                    table.insert(FoundRareBosses, BossName)
                 end
+                if not HaveRareBoss(BossName) and table.find(FoundRareBosses, BossName) then
+                    FoundRareBosses[Index] = nil 
 
-                -- Nếu boss đã despawn thì cho phép lần sau spawn lại sẽ gửi tiếp
-                if (not isFound) and alreadySentIndex then
-                    table.remove(FoundRareBosses, alreadySentIndex)
                 end
             end
 
