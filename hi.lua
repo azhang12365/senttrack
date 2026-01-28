@@ -166,6 +166,10 @@ local function Main()
     print("[AryaClientAPI] Main started")
 
     spawn(function()
+        -- Gửi heartbeat ngay lần đầu
+        wait(2)
+        LastHeartbeat = os.time() - 30 -- Set để gửi ngay lần đầu
+        
         while wait(1) do
             LoopCount = LoopCount + 1
             if LoopCount % 30 == 0 then
@@ -183,6 +187,7 @@ local function Main()
                     ['Players'] = game.Players.NumPlayers .. "/" .. game.Players.MaxPlayers,
                     ['Type'] = 'Heartbeat'
                 }
+                print("[AryaClientAPI] Sending heartbeat...")
                 request({
                     Url = 'https://zangroblox.com/status.php',
                     Method = "POST",
