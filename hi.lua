@@ -161,6 +161,7 @@ local function Main()
 
     local LAstSend = nil 
     local LoopCount = 0
+    local LastHeartbeat = 0
 
     print("[AryaClientAPI] Main started")
 
@@ -169,6 +170,25 @@ local function Main()
             LoopCount = LoopCount + 1
             if LoopCount % 30 == 0 then
                 print("[AryaClientAPI] loop running, count =", LoopCount)
+            end
+
+            -- Gửi heartbeat mỗi 30 giây để báo "đang online"
+            if os.time() - LastHeartbeat >= 30 then
+                LastHeartbeat = os.time()
+                local heartbeatPayload = {
+                    ['JobId'] = tostring(game.JobId),
+                    ['Name'] = game.Players.LocalPlayer.Name,
+                    ['PlaceID'] = game.PlaceId,
+                    ['Sea'] = Sea or "Unknown",
+                    ['Players'] = game.Players.NumPlayers .. "/" .. game.Players.MaxPlayers,
+                    ['Type'] = 'Heartbeat'
+                }
+                request({
+                    Url = 'https://zangroblox.com/status.php',
+                    Method = "POST",
+                    Headers = {['Content-Type'] = "application/json"},
+                    Body = game:GetService("HttpService"):JSONEncode(heartbeatPayload)
+                })
             end
 
             local success, hakiResult = pcall(function()
