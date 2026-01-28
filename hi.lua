@@ -31,6 +31,9 @@ local function Main()
     elseif placeId == 7449423635 or placeId == 100117331123089 then
         Sea = "Zou"
         SeaIndex = 3
+    else
+        Sea = "Unknown"
+        SeaIndex = 0
     end
 
     local LocalPlayer = game.Players.LocalPlayer
@@ -86,8 +89,10 @@ local function Main()
     end
 
     function checkgatcan()
-        local status = game:GetService('ReplicatedStorage'):WaitForChild("Remotes"):WaitForChild('CommF_'):InvokeServer('CheckTempleDoor')
-        if status then
+        local success, status = pcall(function()
+            return game:GetService('ReplicatedStorage'):WaitForChild("Remotes"):WaitForChild('CommF_'):InvokeServer('CheckTempleDoor')
+        end)
+        if success and status then
             return "Pulled"
         else
             return "No"
@@ -138,11 +143,14 @@ local function Main()
     function havelegnpc()
         local dealer = workspace.NPCs:FindFirstChild("Legendary Sword Dealer ")
         if not dealer then
-            local replicatedDealer = game:GetService('ReplicatedStorage').NPCs['Legendary Sword Dealer ']
-            if replicatedDealer.HumanoidRootPart.CFrame.Position.X ~= 0 then return true end
+            local replicatedDealer = game:GetService('ReplicatedStorage').NPCs:FindFirstChild('Legendary Sword Dealer ')
+            if replicatedDealer and replicatedDealer:FindFirstChild('HumanoidRootPart') then
+                if replicatedDealer.HumanoidRootPart.CFrame.Position.X ~= 0 then return true end
+            end
         else
-            if (dealer.HumanoidRootPart.CFrame.X) ~= 0 then return true end
+            if dealer:FindFirstChild('HumanoidRootPart') and (dealer.HumanoidRootPart.CFrame.X) ~= 0 then return true end
         end
+        return false
     end
 
     local CurrentHakiColor = nil 
@@ -163,7 +171,10 @@ local function Main()
                 print("[AryaClientAPI] loop running, count =", LoopCount)
             end
 
-            CurrentHakiColor, _ = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ColorsDealer", "1")
+            local success, hakiResult = pcall(function()
+                return game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ColorsDealer", "1")
+            end)
+            CurrentHakiColor = success and hakiResult or nil
             if CurrentHakiColor and SeaIndex == 3 and not OldHaki then
                 OldHaki = CurrentHakiColor
                 local Payload = {
@@ -184,23 +195,26 @@ local function Main()
 
             if SeaIndex == 2 then
                 if havelegnpc() then
-                    local CurrentSword = game.ReplicatedStorage.Remotes.CommF_:InvokeServer('LegendarySwordDealer', "1")
-                    if OldSword == CurrentSword then return end
-                    print("SENT Sword Data", CurrentSword)
-                    OldSword = CurrentSword
-                    local Payload = {
-                        ['JobId'] = tostring(game.JobId),
-                        ["Players"] = game.Players.NumPlayers .. '/' .. game.Players.MaxPlayers,
-                        ['ClockTime'] = math.floor(game.Lighting.ClockTime),
-                        ["Sword"] = CurrentSword,
-                        ["IsNight"] = isnight(),
-                        ["Script To Join"] = scriptojoin(),
-                        ['PlaceID'] = game.PlaceId,
-                        ["Name"] = game.Players.LocalPlayer.Name,
-                        ["Type"] = "Legendary Sword"
-                    }
+                    local success, CurrentSword = pcall(function()
+                        return game.ReplicatedStorage.Remotes.CommF_:InvokeServer('LegendarySwordDealer', "1")
+                    end)
+                    if success and CurrentSword and CurrentSword ~= OldSword then
+                        print("SENT Sword Data", CurrentSword)
+                        OldSword = CurrentSword
+                        local Payload = {
+                            ['JobId'] = tostring(game.JobId),
+                            ["Players"] = game.Players.NumPlayers .. '/' .. game.Players.MaxPlayers,
+                            ['ClockTime'] = math.floor(game.Lighting.ClockTime),
+                            ["Sword"] = CurrentSword,
+                            ["IsNight"] = isnight(),
+                            ["Script To Join"] = scriptojoin(),
+                            ['PlaceID'] = game.PlaceId,
+                            ["Name"] = game.Players.LocalPlayer.Name,
+                            ["Type"] = "Legendary Sword"
+                        }
 
-                    request({Url = "https://zangroblox.com/sword.php", Method = "POST", Headers = {['Content-Type'] = 'application/json'}, Body = game:GetService('HttpService'):JSONEncode(Payload)})
+                        request({Url = "https://zangroblox.com/sword.php", Method = "POST", Headers = {['Content-Type'] = 'application/json'}, Body = game:GetService('HttpService'):JSONEncode(Payload)})
+                    end
                 end
             end
 
@@ -235,7 +249,7 @@ local function Main()
                     ["JobId"] = tostring(game.JobId),
                     ["Players"] = game.Players.NumPlayers .. "/" .. game.Players.MaxPlayers,
                     ["ClockTime"] = math.floor(game.Lighting.ClockTime),
-                    ["Prehistoric Island"] = HavePrehistoricIsland(),
+                    ["Prehistoric Island"] = true,
                     ['IsNight'] = isnight(),
                     ["Script To Join"] = scriptojoin(),
                     ["PlaceID"] = game.PlaceId,
@@ -283,13 +297,14 @@ local function Main()
                 request({Url = 'https://zangroblox.com/moon.php', Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = game:GetService('HttpService'):JSONEncode(Payload)})
             end
 
-            if getelite() then
-                print("SENT elite")
+            local eliteName = getelite()
+            if eliteName then
+                print("SENT elite", eliteName)
                 local Payload = {
                     ["JobId"] = tostring(game.JobId),
                     ['Players'] = game.Players.NumPlayers .. '/' .. game.Players.MaxPlayers,
                     ['ClockTime'] = math.floor(game.Lighting.ClockTime),
-                    ["Elite"] = getelite(),
+                    ["Elite"] = eliteName,
                     ['IsNight'] = isnight(),
                     ["Script To Join"] = scriptojoin(),
                     ["PlaceID"] = game.PlaceId,
@@ -300,20 +315,23 @@ local function Main()
                 request({Url = "https://zangroblox.com/elite.php", Method = "POST", Headers = {['Content-Type'] = 'application/json'}, Body = game:GetService('HttpService'):JSONEncode(Payload)})
             end
 
-            if berry() and SeaIndex == 3 then
-                local Payload = {
-                    ['JobId'] = tostring(game.JobId),
-                    ["Players"] = game.Players.NumPlayers .. '/' .. game.Players.MaxPlayers,
-                    ['ClockTime'] = math.floor(game.Lighting.ClockTime),
-                    ['Berry'] = berry(),
-                    ["IsNight"] = isnight(),
-                    ['Script To Join'] = scriptojoin(),
-                    ['PlaceID'] = game.PlaceId,
-                    ['Name'] = game.Players.LocalPlayer.Name,
-                    ['Type'] = 'Berry'
-                }
+            if SeaIndex == 3 then
+                local berryName = berry()
+                if berryName then
+                    local Payload = {
+                        ['JobId'] = tostring(game.JobId),
+                        ["Players"] = game.Players.NumPlayers .. '/' .. game.Players.MaxPlayers,
+                        ['ClockTime'] = math.floor(game.Lighting.ClockTime),
+                        ['Berry'] = berryName,
+                        ["IsNight"] = isnight(),
+                        ['Script To Join'] = scriptojoin(),
+                        ['PlaceID'] = game.PlaceId,
+                        ['Name'] = game.Players.LocalPlayer.Name,
+                        ['Type'] = 'Berry'
+                    }
 
-                request({Url = 'https://zangroblox.com/berry.php', Method = "POST", Headers = {['Content-Type'] = "application/json"}, Body = game:GetService('HttpService'):JSONEncode(Payload)})
+                    request({Url = 'https://zangroblox.com/berry.php', Method = "POST", Headers = {['Content-Type'] = "application/json"}, Body = game:GetService('HttpService'):JSONEncode(Payload)})
+                end
             end
 
             if notifications() and SeaIndex == 3 then
