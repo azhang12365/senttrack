@@ -165,10 +165,12 @@ local function Main()
 
     print("[AryaClientAPI] Main started")
 
+    local HEARTBEAT_INTERVAL = 15
+
     spawn(function()
         -- Gửi heartbeat ngay lần đầu
         wait(2)
-        LastHeartbeat = os.time() - 30 -- Set để gửi ngay lần đầu
+        LastHeartbeat = os.time() - HEARTBEAT_INTERVAL -- Set để gửi ngay lần đầu
         
         while wait(1) do
             LoopCount = LoopCount + 1
@@ -176,8 +178,8 @@ local function Main()
                 print("[AryaClientAPI] loop running, count =", LoopCount)
             end
 
-            -- Gửi heartbeat mỗi 30 giây để báo "đang online"
-            if os.time() - LastHeartbeat >= 30 then
+            -- Gửi heartbeat mỗi 15 giây để báo "đang online"
+            if os.time() - LastHeartbeat >= HEARTBEAT_INTERVAL then
                 LastHeartbeat = os.time()
                 local heartbeatPayload = {
                     ['JobId'] = tostring(game.JobId),
